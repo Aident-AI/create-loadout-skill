@@ -1,11 +1,11 @@
 ---
 name: create-loadout-skill
-description: Prepare or revise a local, partner-authored Aident Loadout Skill candidate for internal curator review. Use only when a user explicitly invokes $create-loadout-skill or asks to author, draft, adapt, or revise public guidance that depends on Aident Loadout Integrations, Actions, or Skills. Do not use for routine Loadout usage, integration creation, validation, publication, or promotion.
+description: Prepare, review, and submit a partner-authored Aident Loadout Skill candidate for internal curator review. Use only when a user explicitly invokes $create-loadout-skill or asks to author, draft, adapt, revise, or submit public guidance that depends on Aident Loadout Integrations, Actions, or Skills. Do not use for routine Loadout usage, integration creation, validation, publication, or promotion.
 ---
 
 # Create A Loadout Skill Candidate
 
-Prepare a local review candidate that Aident can validate and curate later. Do not publish it or require access to
+Prepare a review candidate and upload it to Aident's private curator intake. Do not publish it or require access to
 Aident's private repositories, schemas, packager, database, or admin commands.
 
 ## Boundaries
@@ -16,6 +16,7 @@ Aident's private repositories, schemas, packager, database, or admin commands.
   the contributed source material before completing the handoff.
 - Never include credentials, private data, binaries, scripts, remote includes, data URLs, or embedded media.
 - Never call an admin command or claim that Aident validated, saved, published, or activated the candidate.
+- Upload only after showing the completed candidate summary and receiving the user's approval to submit it.
 - Never invent a capability name. Copy exact canonical names from live Loadout discovery.
 - Never execute a mutating Action merely to prepare or test a candidate.
 - Stop if the workflow needs an unavailable capability and substituting another would materially change the goal.
@@ -103,9 +104,12 @@ Create `metadata.json` outside the Skill package:
       "name": "composio:gmail_tools:gmail_send_email",
       "required": true
     }
-  ]
+  ],
+  "idempotencyKey": "partner-launch-update-20260731-v1"
 }
 ```
+
+Keep the idempotency key stable when retrying the same candidate. Use a new key after changing candidate content.
 
 For a revision candidate, record that it revises an existing Skill. Do not guess its canonical name, expected revision,
 or artifact digest. Leave curator-owned concurrency fields for Aident to resolve.
@@ -121,6 +125,7 @@ loadout-skill-candidate/
     <supporting files>
   metadata.json
   handoff.md
+  submission.json
 ```
 
 Keep `handoff.md` outside `skill/`. Record:
@@ -131,6 +136,45 @@ Keep `handoff.md` outside `skill/`. Record:
 - assumptions, unresolved questions, and unavailable capabilities; and
 - a manifest of candidate files.
 
+Create `submission.json` only after the Skill files, metadata, and handoff are complete. It must contain:
+
+```json
+{
+  "candidate": {
+    "schemaVersion": "0.1.0",
+    "displayName": "Launch update workflow",
+    "summary": "Prepare, review, and send a launch update with Gmail.",
+    "language": "en",
+    "tags": ["launch", "email"],
+    "category": "Productivity",
+    "files": [
+      {
+        "path": "SKILL.md",
+        "mediaType": "text/markdown",
+        "content": "<exact contents of skill/SKILL.md>"
+      }
+    ],
+    "references": [
+      {
+        "type": "action",
+        "name": "composio:gmail_tools:gmail_send_email",
+        "required": true
+      }
+    ],
+    "idempotencyKey": "partner-launch-update-20260731-v1"
+  },
+  "handoff": "<exact contents of handoff.md>",
+  "sourceUseAuthorization": {
+    "confirmed": true,
+    "details": "<what the user explicitly authorized Aident to use>"
+  }
+}
+```
+
+Include every file under `skill/` in `candidate.files` using its path relative to `skill/`. Use `text/markdown`,
+`text/plain`, `application/json`, or `application/yaml` to match the file type. Do not include `metadata.json`,
+`handoff.md`, or `submission.json` in `candidate.files`.
+
 ## 6. Check The Candidate
 
 Before handing off:
@@ -140,7 +184,25 @@ Before handing off:
 3. Confirm live capability tags and metadata references match one-to-one.
 4. Check the file, path, byte, tag, and reference limits.
 5. Scan for credentials, private data, unsafe links, scripts, and unsupported embedded content.
-6. Show the user the candidate summary, capability mappings, output path, and warnings.
+6. Show the user the candidate summary, capability mappings, output path, and warnings. Ask whether to upload this
+   exact candidate to Aident for curator review.
 
-Finish with the exact status `candidate prepared for Aident curator review`. Do not describe the candidate as
-validated, saved, published, active, or available in Loadout.
+## 7. Submit To Aident
+
+After the user approves the upload, run:
+
+```bash
+aident skills candidate submit \
+  --submission-file "/absolute/path/to/loadout-skill-candidate/submission.json" \
+  --surface "<codex-or-workbuddy>" \
+  --json
+```
+
+If the command is unavailable, follow `https://aident.ai/SETUP.md` to update the CLI and retry once. A successful
+response returns a private submission ID with `validationStatus: not_validated` and
+`publicationStatus: not_published`. Report the submission ID and finish with the exact status
+`candidate submitted to Aident for curator review`.
+
+If upload still fails, keep the local candidate unchanged, report the failure, and finish with the exact status
+`candidate prepared locally; submission pending`. Never describe the candidate as validated, saved as a Skill draft,
+published, active, or available in Loadout.
