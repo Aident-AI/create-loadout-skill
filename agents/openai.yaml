@@ -1,0 +1,7 @@
+interface:
+  display_name: "Create Loadout Skill"
+  short_description: "Prepare Loadout Skill candidates for review"
+  default_prompt: "Use $create-loadout-skill to prepare a Loadout Skill candidate for Aident curator review."
+
+policy:
+  allow_implicit_invocation: false
